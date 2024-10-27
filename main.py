@@ -12,6 +12,11 @@ def generate_random_4digit_number():
     """Generates a random 4-digit number."""
     return random.randint(1000, 9999)
 
+def generate_random_code():
+  """Generates a 16-digit random code with three spaces in between."""
+  code = ''.join(random.choices('0123456789', k=16))
+  return f"{code[:4]} {code[4:8]} {code[8:12]} {code[12:]}"
+
 def get_predefined_coordinates():
     """Returns predefined coordinates for text placement"""
     coordinates = [
@@ -62,7 +67,7 @@ def process_single_entry(row, output_dir, photo_files):
     district_dev = row['District Name in Devnagri ']
     state_dev = row['State in Devnagri']
     photo_id = row['Photo Id']
-
+    random_code = generate_random_code()
     # Get predefined coordinates
     coordinates = get_predefined_coordinates()
 
@@ -103,6 +108,28 @@ def process_single_entry(row, output_dir, photo_files):
 
         # Add text
         draw.text((text_x, text_y), replace_phrase, font=font, fill=(0, 0, 0))
+
+    font_medium = ImageFont.truetype("AnekDevanagari-VariableFont_wdth,wght.ttf", 30)
+    aadhar_positions = [
+        [[634, 2522], [993, 2522], [993, 2559], [634, 2559]],
+        [[1912, 3398], [2271, 3398], [2271, 3426], [1912, 3426]]
+    ]
+
+    for pos in aadhar_positions:
+        x0, y0 = map(int, pos[0])
+        x1, y1 = map(int, pos[1])
+        x2, y2 = map(int, pos[2])
+        x3, y3 = map(int, pos[3])
+
+        # Create white polygon
+        draw.polygon([(x0, y0), (x1, y1), (x2, y2), (x3, y3)], fill=(255, 255, 255))
+
+        # Add masked Aadhar number
+        text = random_code
+        text_bbox = draw.textbbox((0, 0), text, font=font_medium)
+        text_height = text_bbox[3] - text_bbox[1]
+        text_y = int((y0 + y2) / 2) - (text_height // 2)-(text_height // 2)
+        draw.text((x0, text_y), text, font=font_medium, fill=(0, 0, 0))
 
     # Process Aadhar number with larger font
     font_large = ImageFont.truetype("AnekDevanagari-VariableFont_wdth,wght.ttf", 60)
