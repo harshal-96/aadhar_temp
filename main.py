@@ -30,10 +30,11 @@ def get_predefined_coordinates():
         [[559, 2875], [696, 2875], [696, 2908], [559, 2908]],  # Name in Devnagri (bottom)
         [[559, 2909], [724, 2909], [724, 2952], [559, 2952]],  # Name in English (bottom)
         [[559, 2952], [949, 2952], [949, 2995], [559, 2995]],  # DOB
+        [[559, 2993], [731, 2993], [731, 3037], [559, 3037]],
         [[1474, 3034], [2149, 3034], [2149, 3071], [1474, 3071]],  # Address line 1
         [[1474, 3072], [2149, 3072], [2149, 3114], [1474, 3114]],  # Address line 2
-        [[1474, 3114], [2149, 3114], [2149, 3145], [1474, 3145]],  # District
-        [[1474, 3145], [2149, 3145], [2149, 3180], [1474, 3180]],  # State and PIN
+        [[1474, 3114], [2149, 3114], [2149, 3154], [1474, 3154]],  # District
+        [[1474, 3154], [2149, 3154], [2149, 3189], [1474, 3189]],  # State and PIN
         [[1474, 2876], [2144, 2876], [2144, 2917], [1474, 2917]],  # Address in Devnagri 1
         [[1474, 2918], [2144, 2918], [2144, 2950], [1474, 2950]],  # VTC in Devnagri
         [[1474, 2951], [2144, 2951], [2144, 2989], [1474, 2989]]   # District in Devnagri
@@ -47,7 +48,7 @@ def process_single_entry(row, output_dir, photo_files):
     flat = row['Flat no. ']
     soc_name = row['Society name ']
     area = row['Area Name ']
-    VTC = row['Village/Town/City Name']
+    VTC_name = row['Village/Town/City Name']
     PO_name = row['Post office Name']
     district = row['District']
     state = row['State']
@@ -68,11 +69,11 @@ def process_single_entry(row, output_dir, photo_files):
     # Prepare replacement phrases
     replace_phrases = [
         name_in_dev, name, flat, soc_name, area,
-        f'VTC: {VTC}', f'PO: {PO_name}', f'District: {district}',
+        f'VTC: {VTC_name}', f'PO: {PO_name}', f'District: {district}',
         f'State: {state}', f'PIN Code: {pincode}', f'Mobile: {mobile}',
         name_in_dev, name, f'जन्म तिथि/DOB: {dob}', gender,
-        f'{flat}, {soc_name}', f'{VTC} , {PO_name}', district, f'{state} - {pincode}',
-        f'{flat}, {soc_name_dev}', vtc_dev, district_dev
+        f'{flat}, {soc_name}', f'{VTC_name} , {PO_name}', district, f'{state} - {pincode}',
+        f'{flat}, {soc_name_dev}', vtc_dev, f'{district_dev} , {state_dev} - {pincode}'
     ]
 
     # Read template image
