@@ -7,42 +7,40 @@ import os
 import zipfile
 import io
 import random
-import easyocr
-import matplotlib.pyplot as plt
 
 def generate_random_4digit_number():
     """Generates a random 4-digit number."""
     return random.randint(1000, 9999)
 
-def detect_text(image_path):
-    reader = easyocr.Reader(['en'])
-    image = cv2.imread(image_path)
+# Pre-defined coordinates instead of using EasyOCR
+TEMPLATE_COORDINATES = {
+    'name_dev': [[350, 1344], [771, 1344], [771, 1384], [350, 1384]],
+    'name_eng': [[350, 1384], [771, 1384], [771, 1428], [350, 1428]],
+    'flat': [[350, 1428], [771, 1428], [771, 1472], [350, 1472]],
+    'society': [[350, 1472], [771, 1472], [771, 1512], [350, 1512]],
+    'area': [[350, 1512], [771, 1512], [771, 1556], [350, 1556]],
+    'vtc': [[350, 1556], [771, 1556], [771, 1600], [350, 1600]],
+    'po': [[350, 1600], [771, 1600], [771, 1644], [350, 1644]],
+    'district': [[350, 1644], [771, 1644], [771, 1688], [350, 1688]],
+    'state': [[350, 1688], [771, 1688], [771, 1732], [350, 1732]],
+    'pin': [[350, 1732], [771, 1732], [771, 1776], [350, 1776]],
+    'mobile': [[350, 1776], [771, 1776], [771, 1820], [350, 1820]],
+    'card_name_dev': [[559, 2875], [696, 2875], [696, 2908], [559, 2908]],
+    'card_name_eng': [[559, 2909], [724, 2909], [724, 2952], [559, 2952]],
+    'dob_gender': [[559, 2952], [949, 2952], [949, 2995], [559, 2995]],
+    'card_address1': [[1474, 3034], [2149, 3034], [2149, 3071], [1474, 3071]],
+    'card_address2': [[1474, 3072], [2149, 3072], [2149, 3114], [1474, 3114]],
+    'card_district': [[1474, 3114], [2149, 3114], [2149, 3145], [1474, 3145]],
+    'card_state_pin': [[1474, 3145], [2149, 3145], [2149, 3180], [1474, 3180]],
+    'card_address1_dev': [[1474, 2876], [2144, 2876], [2144, 2917], [1474, 2917]],
+    'card_address2_dev': [[1474, 2918], [2144, 2918], [2144, 2950], [1474, 2950]],
+    'card_district_state_dev': [[1474, 2951], [2144, 2951], [2144, 2989], [1474, 2989]],
+    'aadhar1': [[545, 3370], [1017, 3370], [1017, 3428], [545, 3428]],
+    'aadhar2': [[1823, 3329], [2295, 3329], [2295, 3390], [1823, 3390]],
+    'aadhar3': [[495, 2451], [1048, 2451], [1048, 2517], [495, 2517]]
+}
 
-    # Perform OCR
-    results = reader.readtext(image)
-
-    # Create a copy of the image for drawing
-    output = image.copy()
-
-    # Draw bounding boxes and text
-    for (bbox, text, prob) in results:
-        # Define the bounding box
-        (top_left, top_right, bottom_right, bottom_left) = bbox
-        top_left = tuple(map(int, top_left))
-        bottom_right = tuple(map(int, bottom_right))
-
-        # Draw the bounding box
-        cv2.rectangle(output, top_left, bottom_right, (0, 255, 0), 2)
-
-        # Put the text above the bounding box
-        cv2.putText(output, text, (top_left[0], top_left[1] - 10),
-                    cv2.FONT_HERSHEY_SIMPLEX, 0.8, (0, 255, 0), 2)
-
-
-    # Display the image using matplotlib
-
-    return results
-def process_single_entry(row, detected_text, output_dir):
+def process_single_entry(row, output_dir):
     """Process a single entry from the Excel sheet and generate an image"""
     # Extract data from row
     name = row['Name in English ']
@@ -64,20 +62,30 @@ def process_single_entry(row, detected_text, output_dir):
     state_dev = row['State in Devnagri']
     photo_id = row['Photo Id']
 
-    # Predefined coordinates for text placement
-    match_phrases = [31,33,35,37,39,40,42,44,47,50,52,
-                    91,94,97,100,
-                    105,107,115,113,
-                    92,95,99]
-
-    replace_phrases = [
-        name_in_dev, name, flat, soc_name, area,
-        f'VTC: {VTC}', f'PO: {PO_name}', f'District: {district}',
-        f'State: {state}', f'PIN Code: {pincode}', f'Mobile: {mobile}',
-        name_in_dev, name, f'जन्म तिथि/DOB: {dob}', gender,
-        f'{flat}, {soc_name}', f'{VTC} , {PO_name}', district, f'{state} - {pincode}',
-        f'{flat}, {soc_name_dev}', vtc_dev, district_dev, f'{state_dev} - {pincode}'
-    ]
+    # Create mapping of locations to text
+    text_mapping = {
+        'name_dev': name_in_dev,
+        'name_eng': name,
+        'flat': flat,
+        'society': soc_name,
+        'area': area,
+        'vtc': f'VTC: {VTC}',
+        'po': f'PO: {PO_name}',
+        'district': f'District: {district}',
+        'state': f'State: {state}',
+        'pin': f'PIN Code: {pincode}',
+        'mobile': f'Mobile: {mobile}',
+        'card_name_dev': name_in_dev,
+        'card_name_eng': name,
+        'dob_gender': f'जन्म तिथि/DOB: {dob}, {gender}',
+        'card_address1': f'{flat}, {soc_name}',
+        'card_address2': f'{VTC} , {PO_name}',
+        'card_district': district,
+        'card_state_pin': f'{state} - {pincode}',
+        'card_address1_dev': f'{flat}, {soc_name_dev}',
+        'card_address2_dev': vtc_dev,
+        'card_district_state_dev': f'{district_dev}, {state_dev} - {pincode}'
+    }
 
     # Read template image
     image = cv2.imread('output.jpg')
@@ -86,55 +94,46 @@ def process_single_entry(row, detected_text, output_dir):
 
     # Use default font
     font = ImageFont.truetype("AnekDevanagari-VariableFont_wdth,wght.ttf", 30)
+    font_large = ImageFont.truetype("AnekDevanagari-VariableFont_wdth,wght.ttf", 60)
 
     # Process text replacements
-    for match_phrase, replace_phrase in zip(match_phrases, replace_phrases):
-        if match_phrase < len(detected_text):
-            box = detected_text[0][match_phrase]
-            
-            # Extract coordinates
-            x0, y0 = map(int, box[0])
-            x1, y1 = map(int, box[1])
-            x2, y2 = map(int, box[2])
-            x3, y3 = map(int, box[3])
+    for key, text in text_mapping.items():
+        coords = TEMPLATE_COORDINATES[key]
+        x0, y0 = map(int, coords[0])
+        x1, y1 = map(int, coords[1])
+        x2, y2 = map(int, coords[2])
+        x3, y3 = map(int, coords[3])
 
-            # Create white polygon
-            draw.polygon([(x0, y0), (x1, y1), (x2, y2), (x3, y3)], fill=(255, 255, 255))
+        # Create white polygon
+        draw.polygon([(x0, y0), (x1, y1), (x2, y2), (x3, y3)], fill=(255, 255, 255))
 
-            # Calculate text position
-            text_bbox = draw.textbbox((0, 0), replace_phrase, font=font)
-            text_width = text_bbox[2] - text_bbox[0]
-            text_height = text_bbox[3] - text_bbox[1]
-            text_x = x0
-            text_y = int((y0 + y2) / 2) - (text_height // 2)
+        # Calculate text position
+        text_bbox = draw.textbbox((0, 0), text, font=font)
+        text_height = text_bbox[3] - text_bbox[1]
+        text_y = int((y0 + y2) / 2) - (text_height // 2)
 
-            # Add text
-            draw.text((text_x, text_y), replace_phrase, font=font, fill=(0, 0, 0))
+        # Add text
+        draw.text((x0, text_y), text, font=font, fill=(0, 0, 0))
 
-    # Process Aadhar number with larger font
-    font_large = ImageFont.truetype("AnekDevanagari-VariableFont_wdth,wght.ttf", 60)
-    aadhar_positions = [
-        [[545, 3370], [1017, 3370], [1017, 3428], [545, 3428]],
-        [[1823, 3329], [2295, 3329], [2295, 3390], [1823, 3390]],
-        [[495, 2451], [1048, 2451], [1048, 2517], [495, 2517]]
-    ]
-
+    # Process Aadhar number
     random_number = generate_random_4digit_number()
-    for pos in aadhar_positions:
-        x0, y0 = map(int, pos[0])
-        x1, y1 = map(int, pos[1])
-        x2, y2 = map(int, pos[2])
-        x3, y3 = map(int, pos[3])
+    aadhar_text = f'XXXX XXXX {random_number}'
+    
+    for key in ['aadhar1', 'aadhar2', 'aadhar3']:
+        coords = TEMPLATE_COORDINATES[key]
+        x0, y0 = map(int, coords[0])
+        x1, y1 = map(int, coords[1])
+        x2, y2 = map(int, coords[2])
+        x3, y3 = map(int, coords[3])
 
         # Create white polygon
         draw.polygon([(x0, y0), (x1, y1), (x2, y2), (x3, y3)], fill=(255, 255, 255))
 
         # Add masked Aadhar number
-        text = f'XXXX XXXX {random_number}'
-        text_bbox = draw.textbbox((0, 0), text, font=font_large)
+        text_bbox = draw.textbbox((0, 0), aadhar_text, font=font_large)
         text_height = text_bbox[3] - text_bbox[1]
         text_y = int((y0 + y2) / 2) - text_height
-        draw.text((x0, text_y), text, font=font_large, fill=(0, 0, 0))
+        draw.text((x0, text_y), aadhar_text, font=font_large, fill=(0, 0, 0))
 
     # Save intermediate image
     temp_image_path = os.path.join(output_dir, f'temp_{name}.jpg')
@@ -152,7 +151,7 @@ def process_single_entry(row, detected_text, output_dir):
         result.paste(profile_photo, (270, 2858))
         
         # Save final image
-        final_path = os.path.join(output_dir, f'{name}_card.jpg')
+        final_path = os.path.join(output_dir, f'{name}_{photo_id}_card.jpg')
         result.save(final_path, quality=95)
         
         # Clean up temporary file
@@ -186,33 +185,6 @@ def main():
         # Read Excel file
         df = pd.read_excel(excel_file)
 
-        # Detect text in template once
-        detected_text = detect_text('output.jpg')
-        detected_text=pd.DataFrame(detected_text)
-        detected_text[0].iloc[31]=[[350, 1344], [771, 1344], [771, 1384], [350, 1384]]
-        detected_text[0].iloc[33]=[[350, 1384], [771, 1384], [771, 1428], [350, 1428]]
-        detected_text[0].iloc[35]=[[350, 1428], [771, 1428], [771, 1472], [350, 1472]]
-        detected_text[0].iloc[37]=[[350, 1472], [771, 1472], [771, 1512], [350, 1512]]
-        detected_text[0].iloc[39]=[[350, 1512], [771, 1512], [771, 1556], [350, 1556]]
-        detected_text[0].iloc[40]=[[350, 1556], [771, 1556], [771, 1600], [350, 1600]]
-        detected_text[0].iloc[42]=[[350, 1600], [771, 1600], [771, 1644], [350, 1644]]
-        detected_text[0].iloc[44]=[[350, 1644], [771, 1644], [771, 1688], [350, 1688]]
-        detected_text[0].iloc[47]=[[350, 1688], [771, 1688], [771, 1732], [350, 1732]]
-        detected_text[0].iloc[50]=[[350, 1732], [771, 1732], [771, 1776], [350, 1776]]
-        detected_text[0].iloc[52]=[[350, 1776], [771, 1776], [771, 1820], [350, 1820]]
-        detected_text[0].iloc[91]=[[559, 2875], [696, 2875], [696, 2908], [559, 2908]]
-        detected_text[0].iloc[94]=[[559, 2909], [724, 2909], [724, 2952], [559, 2952]]
-        detected_text[0].iloc[97]=[[559, 2952], [949, 2952], [949, 2995], [559, 2995]]
-        detected_text[0].iloc[105]=[[1474, 3034], [2149, 3034], [2149, 3071], [1474, 3071]]
-        detected_text[0].iloc[107]=[[1474, 3072], [2149, 3072], [2149, 3114], [1474, 3114]]
-        detected_text[0].iloc[113]=[[1474, 3114], [2149, 3114], [2149, 3145], [1474, 3145]]
-        detected_text[0].iloc[115]=[[1474, 3145], [2149, 3145], [2149, 3180], [1474, 3180]]
-        detected_text[0].iloc[92]=[[1474, 2876], [2144, 2876], [2144, 2917], [1474, 2917]]
-        detected_text[0].iloc[95]=[[1474, 2918], [2144, 2918], [2144, 2950], [1474, 2950]]
-        detected_text[0].iloc[99]=[[1474, 2951], [2144, 2951], [2144, 2989], [1474, 2989]]
-        detected_text[0].iloc[124]=[[545, 3370], [1017, 3370], [1017, 3428], [545, 3428]]
-        detected_text[0].iloc[123]=[[1823, 3329], [2295, 3329], [2295, 3390], [1823, 3390]]
-        detected_text[0].iloc[70]=[[495, 2451], [1048, 2451], [1048, 2517], [495, 2517]]
         if st.button("Generate Cards"):
             progress_bar = st.progress(0)
             status_text = st.empty()
@@ -221,7 +193,7 @@ def main():
             generated_files = []
             for index, row in df.iterrows():
                 status_text.text(f"Processing {row['Name in English ']}...")
-                output_path = process_single_entry(row, detected_text, 'temp')
+                output_path = process_single_entry(row, 'temp')
                 if output_path:
                     generated_files.append(output_path)
                 progress_bar.progress((index + 1) / len(df))
