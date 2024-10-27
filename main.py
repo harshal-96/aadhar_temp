@@ -75,7 +75,7 @@ def process_single_entry(row, output_dir, photo_files):
         f'{flat}, {soc_name}', f'{VTC_name}, {PO_name} ', district, f'{state} - {pincode}',
         f'{flat}, {soc_name_dev}', vtc_dev, f'{district_dev} , {state_dev} - {pincode}'
     ]
-    
+
     # Read template image
     image = cv2.imread('output.jpg')
     image_pil = Image.fromarray(cv2.cvtColor(image, cv2.COLOR_BGR2RGB))
@@ -148,7 +148,7 @@ def process_single_entry(row, output_dir, photo_files):
             result.paste(profile_photo, (270, 2858))
             
             # Save final image
-            final_path = os.path.join(output_dir, f'{name}_card.jpg')
+            final_path = os.path.join(output_dir, f'{name}_{photo_id}_card.jpg')
             result.save(final_path, quality=95)
             
             # Clean up temporary file
