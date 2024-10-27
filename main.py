@@ -7,6 +7,28 @@ import os
 import zipfile
 import io
 import random
+from datetime import datetime, timedelta
+
+def generate_random_date_before_october_10_2024():
+  """Generates a random date before October 10, 2024."""
+  start_date = datetime(2024, 1, 1)
+  end_date = datetime(2024, 10, 10)
+  delta = end_date - start_date
+  int_delta = (delta.days * 24 * 60 * 60) + delta.seconds
+  random_second = random.randrange(int_delta)
+  random_date = start_date + timedelta(seconds=random_second)
+  return random_date.strftime("%d/%m/%Y")
+
+def generate_random_date(start_year, end_year):
+  """Generates a random date between the specified start and end years."""
+  start_date = datetime(start_year, 1, 1)
+  end_date = datetime(end_year, 12, 31)
+
+  time_between_dates = end_date - start_date
+  days_between_dates = time_between_dates.days
+  random_number_of_days = random.randrange(days_between_dates)
+  random_date = start_date + timedelta(days=random_number_of_days)
+  return random_date.strftime("%d/%m/%Y")
 
 def generate_random_4digit_number():
     """Generates a random 4-digit number."""
@@ -68,6 +90,8 @@ def process_single_entry(row, output_dir, photo_files):
     state_dev = row['State in Devnagri']
     photo_id = row['Photo Id']
     random_code = generate_random_code()
+    random_date1 = generate_random_date(2013, 2018)
+    random_date2 = generate_random_date_before_october_10_2024()
     # Get predefined coordinates
     coordinates = get_predefined_coordinates()
 
@@ -108,6 +132,49 @@ def process_single_entry(row, output_dir, photo_files):
 
         # Add text
         draw.text((text_x, text_y), replace_phrase, font=font, fill=(0, 0, 0))
+
+    font_rotated = ImageFont.truetype("AnekDevanagari-VariableFont_wdth,wght.ttf", 25)
+    
+    # Define specific coordinates and corresponding dates
+    rotated_coordinates = [
+        [[229, 2866], [258, 2866], [258, 2975], [229, 2975]],
+        [[1444, 2920], [1465, 2920], [1465, 3010], [1444, 3010]]
+    ]
+    rotated_texts = [str(random_date1), str(random_date2)]  # Your date values
+    
+    for coords, rotated_text in zip(rotated_coordinates, rotated_texts):
+        x0, y0 = coords[0]
+        x1, y1 = coords[1]
+        x2, y2 = coords[2]
+        x3, y3 = coords[3]
+
+        # Calculate center position
+        center_x = int((x0 + x2) / 2)
+        center_y = int((y0 + y2) / 2)
+
+        # Get the full text size with padding
+        text_bbox = draw.textbbox((0, 0), rotated_text, font=font_rotated)
+        text_width = text_bbox[2] - text_bbox[0] + 20
+        text_height = text_bbox[3] - text_bbox[1] + 20
+
+        # Create new image for rotated text
+        text_image = Image.new('RGB', (text_width, text_height), (255, 255, 255))
+        text_draw = ImageDraw.Draw(text_image)
+        text_draw.text((5, 5), rotated_text, font=font_rotated, fill=(0, 0, 0))
+
+        # Rotate the text image
+        rotated_text_image = text_image.rotate(90, expand=1)
+        rotated_text_image = rotated_text_image.convert("RGBA")
+
+        # Calculate new position
+        new_x = center_x - (rotated_text_image.width // 2)
+        new_y = center_y - (rotated_text_image.width // 2) - (rotated_text_image.width // 2) - (rotated_text_image.width // 4)
+
+        # Paste rotated text
+        image_pil.paste(rotated_text_image, (new_x, new_y), rotated_text_image)
+
+
+
 
     font_medium = ImageFont.truetype("AnekDevanagari-VariableFont_wdth,wght.ttf", 30)
     aadhar_positions = [
