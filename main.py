@@ -72,7 +72,7 @@ def process_single_entry(row, output_dir, photo_files):
         f'VTC: {VTC_name}', f'PO: {PO_name}', f'District: {district}',
         f'State: {state}', f'PIN Code: {pincode}', f'Mobile: {mobile}',
         name_in_dev, name, f'जन्म तिथि/DOB: {dob}', gender,
-        f'{flat}, {soc_name}', f'{VTC_name} , {PO_name}', district, f'{state} - {pincode}',
+        f'{flat}, {soc_name}', f'{VTC_name}' , PO_name , district, f'{state} - {pincode}',
         f'{flat}, {soc_name_dev}', vtc_dev, f'{district_dev} , {state_dev} - {pincode}'
     ]
 
