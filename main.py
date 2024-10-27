@@ -1,6 +1,5 @@
 import streamlit as st
 import pandas as pd
-import cv2
 import numpy as np
 from PIL import Image, ImageDraw, ImageFont
 import os
@@ -40,7 +39,7 @@ TEMPLATE_COORDINATES = {
     'aadhar3': [[495, 2451], [1048, 2451], [1048, 2517], [495, 2517]]
 }
 
-def process_single_entry(row, output_dir):
+def process_single_entry(row, template_image, output_dir):
     """Process a single entry from the Excel sheet and generate an image"""
     # Extract data from row
     name = row['Name in English ']
@@ -87,9 +86,8 @@ def process_single_entry(row, output_dir):
         'card_district_state_dev': f'{district_dev}, {state_dev} - {pincode}'
     }
 
-    # Read template image
-    image = cv2.imread('output.jpg')
-    image_pil = Image.fromarray(cv2.cvtColor(image, cv2.COLOR_BGR2RGB))
+    # Create a copy of the template image
+    image_pil = template_image.copy()
     draw = ImageDraw.Draw(image_pil)
 
     # Use default font
@@ -137,8 +135,7 @@ def process_single_entry(row, output_dir):
 
     # Save intermediate image
     temp_image_path = os.path.join(output_dir, f'temp_{name}.jpg')
-    image_final = cv2.cvtColor(np.array(image_pil), cv2.COLOR_RGB2BGR)
-    cv2.imwrite(temp_image_path, image_final)
+    image_pil.save(temp_image_path)
 
     # Add profile photo if available
     try:
@@ -151,7 +148,7 @@ def process_single_entry(row, output_dir):
         result.paste(profile_photo, (270, 2858))
         
         # Save final image
-        final_path = os.path.join(output_dir, f'{name}_{photo_id}_card.jpg')
+        final_path = os.path.join(output_dir, f'{name}_card.jpg')
         result.save(final_path, quality=95)
         
         # Clean up temporary file
@@ -171,7 +168,10 @@ def main():
     # Multiple file uploader for profile photos
     profile_photos = st.file_uploader("Upload profile photos", type=['jpg', 'jpeg', 'png'], accept_multiple_files=True)
 
-    if excel_file and profile_photos:
+    # Upload template image
+    template_file = st.file_uploader("Upload template image", type=['jpg', 'jpeg', 'png'])
+
+    if excel_file and profile_photos and template_file:
         # Create temporary directory for processing
         if not os.path.exists('temp'):
             os.makedirs('temp')
@@ -185,6 +185,9 @@ def main():
         # Read Excel file
         df = pd.read_excel(excel_file)
 
+        # Read template image
+        template_image = Image.open(template_file)
+
         if st.button("Generate Cards"):
             progress_bar = st.progress(0)
             status_text = st.empty()
@@ -193,7 +196,7 @@ def main():
             generated_files = []
             for index, row in df.iterrows():
                 status_text.text(f"Processing {row['Name in English ']}...")
-                output_path = process_single_entry(row, 'temp')
+                output_path = process_single_entry(row, template_image, 'temp')
                 if output_path:
                     generated_files.append(output_path)
                 progress_bar.progress((index + 1) / len(df))
