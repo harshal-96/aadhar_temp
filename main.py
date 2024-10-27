@@ -40,7 +40,7 @@ def get_predefined_coordinates():
     ]
     return coordinates
 
-def process_single_entry(row, output_dir):
+def process_single_entry(row, output_dir, photo_files):
     """Process a single entry from the Excel sheet and generate an image"""
     # Extract data from row
     name = row['Name in English ']
@@ -135,21 +135,27 @@ def process_single_entry(row, output_dir):
 
     # Add profile photo if available
     try:
-        profile_photo = Image.open(f'{photo_id}.jpg')
-        if profile_photo.mode == 'RGBA':
-            profile_photo = profile_photo.convert('RGB')
-        profile_photo = profile_photo.resize((250, 330), Image.Resampling.LANCZOS)
-        
-        result = Image.open(temp_image_path)
-        result.paste(profile_photo, (270, 2858))
-        
-        # Save final image
-        final_path = os.path.join(output_dir, f'{name}_card.jpg')
-        result.save(final_path, quality=95)
-        
-        # Clean up temporary file
-        os.remove(temp_image_path)
-        return final_path
+        # Look for the photo in the uploaded files dictionary
+        if str(photo_id) in photo_files:
+            photo_data = photo_files[str(photo_id)]
+            profile_photo = Image.open(io.BytesIO(photo_data))
+            if profile_photo.mode == 'RGBA':
+                profile_photo = profile_photo.convert('RGB')
+            profile_photo = profile_photo.resize((250, 330), Image.Resampling.LANCZOS)
+            
+            result = Image.open(temp_image_path)
+            result.paste(profile_photo, (270, 2858))
+            
+            # Save final image
+            final_path = os.path.join(output_dir, f'{name}_card.jpg')
+            result.save(final_path, quality=95)
+            
+            # Clean up temporary file
+            os.remove(temp_image_path)
+            return final_path
+        else:
+            st.error(f"Photo ID {photo_id} not found in uploaded files")
+            return temp_image_path
     except Exception as e:
         st.error(f"Error processing photo for {name}: {str(e)}")
         return temp_image_path
@@ -169,11 +175,12 @@ def main():
         if not os.path.exists('temp'):
             os.makedirs('temp')
 
-        # Save profile photos
+        # Create a dictionary of photo files using their names as keys
+        photo_files = {}
         for photo in profile_photos:
-            photo_path = os.path.join('temp', photo.name)
-            with open(photo_path, 'wb') as f:
-                f.write(photo.getvalue())
+            # Remove file extension to get the ID
+            photo_id = os.path.splitext(photo.name)[0]
+            photo_files[photo_id] = photo.read()
 
         # Read Excel file
         df = pd.read_excel(excel_file)
@@ -186,7 +193,7 @@ def main():
             generated_files = []
             for index, row in df.iterrows():
                 status_text.text(f"Processing {row['Name in English ']}...")
-                output_path = process_single_entry(row, 'temp')
+                output_path = process_single_entry(row, 'temp', photo_files)
                 if output_path:
                     generated_files.append(output_path)
                 progress_bar.progress((index + 1) / len(df))
@@ -210,13 +217,6 @@ def main():
                 for file in generated_files:
                     try:
                         os.remove(file)
-                    except:
-                        pass
-
-                # Clean up profile photos
-                for photo in profile_photos:
-                    try:
-                        os.remove(os.path.join('temp', photo.name))
                     except:
                         pass
 
