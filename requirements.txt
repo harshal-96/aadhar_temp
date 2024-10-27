@@ -3,6 +3,5 @@ pandas
 opencv-python 
 Pillow 
 numpy 
-easyocr 
 matplotlib
 openpyxl
