@@ -89,9 +89,14 @@ def process_single_entry(row, output_dir, photo_files):
     district_dev = row['District Name in Devnagri ']
     state_dev = row['State in Devnagri']
     photo_id = row['Photo Id']
+    random.seed(hash(str(row.to_dict().values())))  # Use row data as seed
     random_code = generate_random_code()
     random_date1 = generate_random_date(2013, 2018)
     random_date2 = generate_random_date_before_october_10_2024()
+    random_number = generate_random_4digit_number()
+    
+    # Reset random seed to ensure independence between iterations
+    random.seed()
     # Get predefined coordinates
     coordinates = get_predefined_coordinates()
 
@@ -206,7 +211,7 @@ def process_single_entry(row, output_dir, photo_files):
         [[495, 2451], [1048, 2451], [1048, 2517], [495, 2517]]
     ]
 
-    random_number = generate_random_4digit_number()
+
     for pos in aadhar_positions:
         x0, y0 = map(int, pos[0])
         x1, y1 = map(int, pos[1])
