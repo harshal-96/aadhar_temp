@@ -2,7 +2,7 @@
 import streamlit as st
 import main_aadhar # type: ignore
 import pancard_bright  # type: ignore
-import main_udhyam
+import main_udhyam1
 
 # Import more sub-apps as needed
 
@@ -18,7 +18,7 @@ def main():
         "Main App": main_app,
         "Aadhar": main_aadhar.main,
         "Pancard": pancard_bright.main,
-        "Udhyam" : main_udhyam.main
+        "Udhyam" : main_udhyam1.main
 
     }
     
