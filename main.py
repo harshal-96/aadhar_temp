@@ -1,8 +1,9 @@
 # main_app.py
 import streamlit as st
-import main_aadhar # type: ignore
+import main_aadhar  # type: ignore
 import pancard_bright  # type: ignore
-import main_udhyam1
+import main_udhyam1  # type: ignore
+import main_aadhar_from_excel  # type: ignore
 
 # Import more sub-apps as needed
 
@@ -13,13 +14,12 @@ def main_app():
 def main():
     st.set_page_config(page_title="Multi-App Streamlit Integrator", layout="wide")
 
-  
     apps = {
         "Main App": main_app,
         "Aadhar": main_aadhar.main,
         "Pancard": pancard_bright.main,
-        "Udhyam" : main_udhyam1.main
-
+        "Udhyam": main_udhyam1.main,
+        "Aadhar from Excel": main_aadhar_from_excel.main
     }
     
     st.sidebar.title("Navigation")
